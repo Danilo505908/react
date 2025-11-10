@@ -19,15 +19,20 @@ const api = axios.create({
 // Add request interceptor to log requests and verify token
 api.interceptors.request.use(
   (config) => {
-    // Log in development to help debug
-    if (process.env.NODE_ENV === "development") {
-      console.log("API Request:", {
-        url: config.url,
-        baseURL: config.baseURL,
-        hasToken: !!TOKEN,
-        tokenLength: TOKEN?.length || 0,
-      });
+    // Always log token status (without exposing the actual token)
+    console.log("API Request:", {
+      url: config.url,
+      baseURL: config.baseURL,
+      hasToken: !!TOKEN,
+      tokenLength: TOKEN?.length || 0,
+      tokenPrefix: TOKEN ? TOKEN.substring(0, 20) + "..." : "none",
+    });
+    
+    // Warn if token is missing
+    if (!TOKEN) {
+      console.warn("⚠️ NEXT_PUBLIC_NOTEHUB_TOKEN is missing! API requests will fail with 401.");
     }
+    
     return config;
   },
   (error) => {
@@ -52,14 +57,31 @@ api.interceptors.response.use(
       
       // Special handling for 401 errors
       if (status === 401) {
-        console.error(
-          "Authentication failed (401). Check if NEXT_PUBLIC_NOTEHUB_TOKEN is set correctly.",
-          {
-            tokenExists: !!TOKEN,
-            tokenLength: TOKEN?.length || 0,
-            baseURL: BASE_URL,
-          }
-        );
+        const errorDetails = {
+          tokenExists: !!TOKEN,
+          tokenLength: TOKEN?.length || 0,
+          baseURL: BASE_URL,
+          envVarName: "NEXT_PUBLIC_NOTEHUB_TOKEN",
+        };
+        
+        console.error("❌ Authentication failed (401). Details:", errorDetails);
+        
+        if (!TOKEN) {
+          console.error(
+            "🔴 CRITICAL: NEXT_PUBLIC_NOTEHUB_TOKEN environment variable is not set!\n" +
+            "Please configure it in your deployment platform:\n" +
+            "1. Go to your deployment platform settings\n" +
+            "2. Add environment variable: NEXT_PUBLIC_NOTEHUB_TOKEN\n" +
+            "3. Redeploy your application"
+          );
+        } else {
+          console.error(
+            "⚠️ Token exists but authentication failed. Possible issues:\n" +
+            "- Token might be expired or invalid\n" +
+            "- Token might not be properly set in deployment environment\n" +
+            "- Make sure to redeploy after setting environment variables"
+          );
+        }
       }
     } else if (error.request) {
       // Request was made but no response received
