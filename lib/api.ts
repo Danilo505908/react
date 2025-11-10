@@ -4,13 +4,35 @@ import { type Note } from "@/types/note";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://notehub-public.goit.study/api";
 const TOKEN = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
 
+if (!TOKEN) {
+  console.error("NEXT_PUBLIC_NOTEHUB_TOKEN is not set. Please configure environment variables.");
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
-    Authorization: `Bearer ${TOKEN}`,
+    Authorization: TOKEN ? `Bearer ${TOKEN}` : "",
     "Content-Type": "application/json",
   },
 });
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      // Server responded with error status
+      console.error("API Error:", error.response.status, error.response.data);
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error("Network Error:", error.message);
+    } else {
+      // Something else happened
+      console.error("Error:", error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface NormalizedNotesResponse {
   data: Note[];

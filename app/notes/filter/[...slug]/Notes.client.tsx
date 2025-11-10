@@ -21,7 +21,7 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 500);
 
-  const { data, isLoading, isError } = useQuery<NormalizedNotesResponse>({
+  const { data, isLoading, isError, error } = useQuery<NormalizedNotesResponse>({
     queryKey: ["notes", initialTag, page, PER_PAGE, debouncedSearch],
     queryFn: () =>
       fetchNotes({
@@ -61,7 +61,12 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
 
       <main>
         {isLoading && <p>Loading notes...</p>}
-        {isError && <p>Error loading notes.</p>}
+        {isError && (
+          <div>
+            <p>Error loading notes.</p>
+            {error && <p style={{ fontSize: "12px", color: "#666" }}>{error.message}</p>}
+          </div>
+        )}
         {data && <NoteList notes={data.data} />}
       </main>
     </div>
