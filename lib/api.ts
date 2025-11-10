@@ -16,16 +16,58 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to log requests and verify token
+api.interceptors.request.use(
+  (config) => {
+    // Log in development to help debug
+    if (process.env.NODE_ENV === "development") {
+      console.log("API Request:", {
+        url: config.url,
+        baseURL: config.baseURL,
+        hasToken: !!TOKEN,
+        tokenLength: TOKEN?.length || 0,
+      });
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
       // Server responded with error status
-      console.error("API Error:", error.response.status, error.response.data);
+      const status = error.response.status;
+      console.error("API Error:", {
+        status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.config?.url,
+        hasToken: !!TOKEN,
+      });
+      
+      // Special handling for 401 errors
+      if (status === 401) {
+        console.error(
+          "Authentication failed (401). Check if NEXT_PUBLIC_NOTEHUB_TOKEN is set correctly.",
+          {
+            tokenExists: !!TOKEN,
+            tokenLength: TOKEN?.length || 0,
+            baseURL: BASE_URL,
+          }
+        );
+      }
     } else if (error.request) {
       // Request was made but no response received
-      console.error("Network Error:", error.message);
+      console.error("Network Error:", {
+        message: error.message,
+        url: error.config?.url,
+        baseURL: BASE_URL,
+      });
     } else {
       // Something else happened
       console.error("Error:", error.message);

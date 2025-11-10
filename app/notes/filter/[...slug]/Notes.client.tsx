@@ -64,7 +64,16 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
         {isError && (
           <div>
             <p>Error loading notes.</p>
-            {error && <p style={{ fontSize: "12px", color: "#666" }}>{error.message}</p>}
+            {error && (
+              <div style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+                <p>{error.message}</p>
+                {error.message.includes("401") && (
+                  <p style={{ marginTop: "8px", color: "#d32f2f" }}>
+                    Authentication error: Please check if environment variables are configured correctly on the deployment platform.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
         {data && <NoteList notes={data.data} />}
